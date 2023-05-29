@@ -2,7 +2,11 @@ import { fastify } from "fastify";
 import fastifyMultipart from "@fastify/multipart";
 import { filemanager } from "./filemanager.js";
 
-const app = fastify();
+const app = fastify({
+    logger: {
+        level: "error"
+    }
+});
 
 app.get("/", async (_req, reply) => {
     reply.send({
@@ -16,7 +20,10 @@ app.register(fastifyMultipart, {
         fileSize: 52428800, // 50MiB
     },
 });
-app.register(filemanager);
+app.register(filemanager, {
+    prefix: "/filemanager",
+    sharedSchemaId: "#sharedSchema"
+});
 
 const port = 3000;
 const host = process.env.NODE_ENV === "production" ? "0.0.0.0" : "127.0.0.1";
