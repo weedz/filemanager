@@ -1,12 +1,13 @@
 import { fastify } from "fastify";
 import fastifyMultipart from "@fastify/multipart";
+import { TypeBoxTypeProvider } from "@fastify/type-provider-typebox";
 import { filemanager } from "./filemanager.js";
 
 const app = fastify({
     logger: {
         level: "error"
     }
-});
+}).withTypeProvider<TypeBoxTypeProvider>();
 
 app.get("/", async (_req, reply) => {
     reply.send({

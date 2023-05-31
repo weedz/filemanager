@@ -8,6 +8,12 @@ dependencies:
   '@fastify/multipart':
     specifier: ^7.6.0
     version: 7.6.0
+  '@fastify/type-provider-typebox':
+    specifier: ^3.2.0
+    version: 3.2.0(@sinclair/typebox@0.28.14)
+  '@sinclair/typebox':
+    specifier: ^0.28.14
+    version: 0.28.14
   fastify:
     specifier: ^4.17.0
     version: 4.17.0
@@ -71,6 +77,18 @@ packages:
       hexoid: 1.0.0
       secure-json-parse: 2.7.0
       stream-wormhole: 1.1.0
+    dev: false
+
+  /@fastify/type-provider-typebox@3.2.0(@sinclair/typebox@0.28.14):
+    resolution: {integrity: sha512-Ec+dHVfb9wovQ/jclkDbzTshHTtSsDmTGhls6S/TM3QIcx7682Jq8/W0kHXW3ylBUBEtcel87B+PuwH17TRDAw==}
+    peerDependencies:
+      '@sinclair/typebox': ^0.28.0
+    dependencies:
+      '@sinclair/typebox': 0.28.14
+    dev: false
+
+  /@sinclair/typebox@0.28.14:
+    resolution: {integrity: sha512-aB3ddagwMFz2cSLg0/gUt7yaUHJUKnT+rEHGdb/srtEFILB0zdL7a2mcbA7kskOCFHicAOV1POeeZdwoevFgAQ==}
     dev: false
 
   /@types/node@20.2.5:

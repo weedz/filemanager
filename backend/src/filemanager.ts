@@ -5,6 +5,7 @@ import { MultipartFile } from "@fastify/multipart";
 import sharp from "sharp";
 import { urlAlphabet, customAlphabet } from "nanoid";
 import { FastifyInstance, FastifyPluginOptions, FastifyReply, FastifyRequest } from "fastify";
+import { FileManagerRouteQuerystringType, MoveType, fileManagerQuerystringSchema, fileManagerSchema } from "./schema.js";
 
 const nanoidUrlAlphabet = customAlphabet(urlAlphabet);
 
@@ -13,22 +14,8 @@ interface FileManagerPluginOpts extends FastifyPluginOptions {
     sharedSchemaId: string
 }
 
-// const nanoidUrlAlphabet = customAlphabet(urlAlphabet);
-const paths = {
-    root: {
-        relative: "/uploads/root",
-        absolute: path.resolve("./uploads/root"),
-    },
-    thumbnails: {
-        relative: "/uploads/thumbnails",
-        absolute: path.resolve("./uploads/thumbnails"),
-    }
-};
-
 interface FileManagerRoute {
-    Querystring: {
-        path: string
-    }
+    Querystring: FileManagerRouteQuerystringType
 }
 
 interface FileNode {
@@ -49,22 +36,46 @@ interface FileSystemManifest {
     type: "dir"
 }
 
+const paths = {
+    root: {
+        relative: "/uploads/root",
+        absolute: path.resolve("./uploads/root"),
+    },
+    thumbnails: {
+        relative: "/uploads/thumbnails",
+        absolute: path.resolve("./uploads/thumbnails"),
+    }
+};
+
 let filesystem: FileSystemManifest;
 refreshManifest();
 
-const fileManagerQuerystringSchema = {
-    type: "object",
-    properties: {
-        path: { type: "string" }
-    },
-    required: ["path"]
-} as const;
+async function routes(fastify: FastifyInstance, opts: FileManagerPluginOpts) {
+    fastify.get("/", async (_req, reply) => {
+        await refreshManifest();
+        reply.send({
+            msg: "filemanager"
+        });
+    });
 
-const fileManagerSchema = {
-    schema: {
-        querystring: fileManagerQuerystringSchema
-    },
-} as const;
+    fastify.get<FileManagerRoute>("/ls", fileManagerSchema, listFiles);
+    fastify.post<FileManagerRoute>("/mkdir", fileManagerSchema, mkdir);
+    fastify.delete<FileManagerRoute>("/rm", fileManagerSchema, rm);
+    fastify.post("/mv", mv);
+    fastify.get<FileManagerRoute>("/file", fileManagerSchema, statFile);
+    fastify.post("/file", {
+        // onRequest: authenticateRoute("admin"),
+        schema: {
+            querystring: fileManagerQuerystringSchema,
+            body: {
+                type: "object",
+                properties: {
+                    file: { $ref: opts.sharedSchemaId },
+                }
+            }
+        },
+    }, uploadFile);
+}
 
 async function refreshManifest() {
     const manifestPath = path.resolve("./uploads/manifest.json");
@@ -146,36 +157,6 @@ function normalizePath(nodePath: string): string {
     return nodePath;
 }
 
-async function routes(fastify: FastifyInstance, opts: FileManagerPluginOpts) {
-    fastify.get("/", async (_req, reply) => {
-        await refreshManifest();
-        reply.send({
-            msg: "filemanager"
-        });
-    });
-
-    fastify.get("/ls", fileManagerSchema, listFiles);
-    fastify.get("/stat", fileManagerSchema, statFile);
-
-    fastify.post("/mkdir", fileManagerSchema, mkdir);
-    fastify.delete("/rm", fileManagerSchema, rm);
-
-    fastify.post("/mv", mv);
-
-    fastify.post("/file", {
-        // onRequest: authenticateRoute("admin"),
-        schema: {
-            querystring: fileManagerQuerystringSchema,
-            body: {
-                type: "object",
-                properties: {
-                    file: { $ref: opts.sharedSchemaId },
-                }
-            }
-        },
-    }, uploadFile);
-}
-
 async function uploadFile(req: FastifyRequest<{
     Body: {
         file: MultipartFile
@@ -232,14 +213,11 @@ async function uploadFile(req: FastifyRequest<{
 }
 
 async function mv(req: FastifyRequest<{
-    Body: {
-        source?: string
-        destination?: string
-    }
+    Body: MoveType
 }>, reply: FastifyReply) {
     await refreshManifest();
-    const source = normalizePath(req.body.source!);
-    const destination = normalizePath(req.body.destination!);
+    const source = normalizePath(req.body.source);
+    const destination = normalizePath(req.body.destination);
 
     if (source === "" || source === "/") {
         return reply.status(400).send({ err: "invalid source" });
