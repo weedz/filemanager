@@ -33,7 +33,6 @@ interface DirNode {
 
 interface FileSystemManifest {
     root: DirNode
-    type: "dir"
 }
 
 const paths = {
@@ -82,8 +81,21 @@ async function routes(fastify: FastifyInstance, opts: FileManagerPluginOpts) {
 
 async function refreshManifest() {
     const manifestPath = path.resolve("./uploads/manifest.json");
-    const manifest = await fs.readFile(manifestPath);
-    filesystem = JSON.parse(manifest.toString()) as FileSystemManifest;
+    try {
+        const file = await fs.open(manifestPath);
+        const manifest = await file.readFile();
+        filesystem = JSON.parse(manifest.toString()) as FileSystemManifest;
+        file.close();
+    } catch (_) {
+        // Manifest probably does not exist, so we create a new.
+        filesystem = {
+            root: {
+                type: "dir",
+                nodes: {}
+            }
+        };
+        await fs.writeFile(manifestPath, JSON.stringify(filesystem));
+    }
 }
 
 async function saveManifest() {
@@ -363,16 +375,17 @@ async function rm(req: FastifyRequest<FileManagerRoute>, reply: FastifyReply) {
 async function downloadFile(req: FastifyRequest<FileManagerRoute>, reply: FastifyReply) {
     const nodePath = normalizePath(req.query.path);
     const node = getNode(nodePath);
-    console.log("Node:", node);
+
     if (!node) {
         return reply.status(404).send();
     }
+
     if (node.type === "dir") {
+        // TODO: Zip multiple files and folders?
         return reply.status(422).send({error: "unable to download a directory"});
     }
 
     const filePath = path.join(paths.root.absolute, node.filename);
-    console.log("Filepath:", filePath);
 
     const file = await fs.open(filePath);
 

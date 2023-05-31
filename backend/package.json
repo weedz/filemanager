@@ -5,6 +5,7 @@
   "main": "dist/main.js",
   "type": "module",
   "scripts": {
+    "start": "node dist/main.js",
     "dev": "tsc --watch",
     "build": "tsc"
   },
