@@ -75,6 +75,9 @@ async function routes(fastify: FastifyInstance, opts: FileManagerPluginOpts) {
             }
         },
     }, uploadFile);
+
+    // TODO: zip
+    fastify.get<FileManagerRoute>("/file/download", fileManagerSchema, downloadFile);
 }
 
 async function refreshManifest() {
@@ -382,6 +385,28 @@ async function rm(req: FastifyRequest<FileManagerRoute>, reply: FastifyReply) {
     await saveManifest();
 
     return reply.status(200).send();
+}
+
+async function downloadFile(req: FastifyRequest<FileManagerRoute>, reply: FastifyReply) {
+    const nodePath = normalizePath(req.query.path);
+    const node = getNode(nodePath);
+    console.log("Node:", node);
+    if (!node) {
+        return reply.status(404).send();
+    }
+    if (node.type === "dir") {
+        return reply.status(422).send({error: "unable to download a directory"});
+    }
+
+    const filePath = path.join(paths.root.absolute, path.dirname(nodePath), node.filename);
+    console.log("Filepath:", filePath);
+
+    const file = await fs.open(filePath);
+
+    const stream = file.createReadStream();
+    reply.header("Content-Type", "application/octet-stream");
+    reply.header("Content-Disposition", `attachment; filename=${node.filename}`);
+    return reply.send(stream);
 }
 
 export const filemanager = fp(async (fastify, opts: FileManagerPluginOpts) => {
