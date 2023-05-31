@@ -36,6 +36,7 @@ interface FileSystemManifest {
     root: DirNode
 }
 
+// TODO: Make these configurable
 const paths = {
     root: {
         relative: "/uploads/root",
