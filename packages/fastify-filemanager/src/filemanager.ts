@@ -368,14 +368,22 @@ async function listFiles(req: FastifyRequest<FileManagerRoute>, reply: FastifyRe
         return reply.status(400).send();
     }
 
-    // return reply.status(200).send(Object.keys(tree.nodes).map(node => ({
     return reply.status(200).send(Object.keys(tree.nodes).map(nodeName => {
         const node = tree.nodes[nodeName];
+        // TODO: Would it be faster to use a Map over `node.type` with a function to resolve the given type?
+        if (node.type === "dir") {
+            return {
+                type: node.type,
+                name: nodeName,
+            };
+        }
+
         return {
             type: node.type,
-            // name: (node.type === "file") ? node.filename : nodeName,
             name: nodeName,
-        };
+            thumbnail: node.thumbnail,
+            size: node.size
+        }
     }));
 }
 
