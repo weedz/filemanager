@@ -1,7 +1,7 @@
 import { fastify } from "fastify";
 import fastifyMultipart from "@fastify/multipart";
 import { TypeBoxTypeProvider } from "@fastify/type-provider-typebox";
-import { filemanager } from "./filemanager.js";
+import { filemanager } from "@weedzcokie/fastify-filemanager";
 
 const app = fastify({
     logger: {

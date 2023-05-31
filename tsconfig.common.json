@@ -1,5 +1,6 @@
 {
     "compilerOptions": {
+        "declaration": true,
         "module": "ESNext",
         "target": "ESNext",
         "strict": true,
@@ -15,7 +16,7 @@
         "alwaysStrict": true,
         "forceConsistentCasingInFileNames": true,
         "noEmit": true,
-        "sourceMap": true,
+        "sourceMap": false,
         "moduleResolution": "node",
         "resolveJsonModule": true,
         "useDefineForClassFields": true

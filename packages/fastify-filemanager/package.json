@@ -1,28 +1,31 @@
 {
-  "name": "backend",
-  "version": "1.0.0",
+  "name": "@weedzcokie/fastify-filemanager",
+  "version": "0.1.0",
   "description": "",
-  "main": "dist/main.js",
+  "main": "dist/filemanager.js",
   "type": "module",
   "scripts": {
-    "start": "node dist/main.js",
-    "dev": "tsc --watch",
     "build": "tsc"
   },
   "keywords": [],
   "author": "",
   "license": "MIT",
   "dependencies": {
-    "@fastify/multipart": "^7.6.0",
-    "@fastify/type-provider-typebox": "^3.2.0",
     "@sinclair/typebox": "^0.28.14",
-    "fastify": "^4.17.0",
     "fastify-plugin": "^4.5.0",
     "nanoid": "^4.0.2",
     "sharp": "^0.32.1"
   },
   "devDependencies": {
+    "@fastify/multipart": "^7.6.0",
+    "@fastify/type-provider-typebox": "^3.2.0",
     "@types/node": "^20.2.5",
+    "fastify": "^4.17.0",
     "typescript": "^5.0.4"
+  },
+  "peerDependencies": {
+    "@fastify/multipart": "^7.6.0",
+    "@fastify/type-provider-typebox": "^3.2.0",
+    "fastify": "^4.17.0"
   }
 }
