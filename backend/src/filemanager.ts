@@ -168,8 +168,6 @@ async function uploadFile(req: FastifyRequest<{
         path: string
     }
 }>, reply: FastifyReply) {
-    const filePath = path.normalize(req.query.path);
-
     const targetDirectory = getNode(normalizePath(req.query.path));
     if (!targetDirectory || targetDirectory.type === "file") {
         console.error("invalid directory");
@@ -200,7 +198,7 @@ async function uploadFile(req: FastifyRequest<{
 
     const newFileNameWithExtension = `${newFileName}${extname}`;
 
-    await fs.writeFile(path.join(paths.root.absolute, filePath, newFileNameWithExtension), inputBuffer);
+    await fs.writeFile(path.join(paths.root.absolute, newFileNameWithExtension), inputBuffer);
 
     const newNode: FileNode = {
         type: "file",
@@ -230,9 +228,6 @@ async function mv(req: FastifyRequest<{
         return reply.status(400).send({ err: "'source' can not be 'destination'" });
     }
 
-    const sourcePath = path.join(paths.root.absolute, source);
-    const destinationPath = path.join(paths.root.absolute, destination);
-
     // Check if `source` exists
     if (!checkIfPathExists(source)) {
         console.log("Source does not exist?");
@@ -242,14 +237,6 @@ async function mv(req: FastifyRequest<{
     // Check if `destination` exists
     if (checkIfPathExists(destination)) {
         return reply.status(400).send({ err: "destination already exists" });
-    }
-
-    try {
-        // TODO: Can you rename to a directory which does not exist?
-        await fs.rename(sourcePath, destinationPath);
-    } catch (err) {
-        console.log("Failed to mv:", err);
-        return reply.status(500).send();
     }
 
     const sourceParentNode = getParentNode(source);
@@ -322,13 +309,6 @@ async function mkdir(req: FastifyRequest<FileManagerRoute>, reply: FastifyReply)
         return reply.status(200).send();
     }
 
-    try {
-        await fs.mkdir(path.join(paths.root.absolute, newDirPath), { recursive: true });
-    } catch (err) {
-        console.log("Failed to create directory:", err);
-        return reply.status(500).send({ err: "failed to create directory" });
-    }
-
     const segments = newDirPath.split("/");
     let tree = filesystem.root as DirNode | FileNode;
     for (const segment of segments) {
@@ -346,7 +326,6 @@ async function mkdir(req: FastifyRequest<FileManagerRoute>, reply: FastifyReply)
 
     await saveManifest();
 
-
     return reply.status(201).send();
 }
 
@@ -362,21 +341,15 @@ async function rm(req: FastifyRequest<FileManagerRoute>, reply: FastifyReply) {
     }
 
     const node = parentNode.tree.nodes[parentNode.head];
-    const nodePath = node.type === "dir" ? dirPath : path.join(path.dirname(dirPath), node.filename);
 
-    try {
-        await fs.rm(path.join(paths.root.absolute, nodePath), { recursive: true });
-    } catch (err) {
-        console.log("Failed to delete directory:", err);
-        return reply.status(500).send({ err: "failed to delete directory" });
-    }
-
-    if (node.type === "file" && node.thumbnail) {
-        try {
-            await fs.rm(path.join(paths.thumbnails.absolute, node.thumbnail));
-        } catch (err) {
-            console.log("Failed to thumbnail:", err);
-            // return reply.status(500).send({ err: "Failed to thumbnail" });
+    if (node.type === "file") {
+        await fs.rm(path.join(paths.root.absolute, node.filename));
+        if (node.thumbnail) {
+            try {
+                await fs.rm(path.join(paths.thumbnails.absolute, node.thumbnail));
+            } catch (err) {
+                console.log("Failed to remove thumbnail:", err);
+            }
         }
     }
 
@@ -398,7 +371,7 @@ async function downloadFile(req: FastifyRequest<FileManagerRoute>, reply: Fastif
         return reply.status(422).send({error: "unable to download a directory"});
     }
 
-    const filePath = path.join(paths.root.absolute, path.dirname(nodePath), node.filename);
+    const filePath = path.join(paths.root.absolute, node.filename);
     console.log("Filepath:", filePath);
 
     const file = await fs.open(filePath);
