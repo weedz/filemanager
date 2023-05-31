@@ -5,7 +5,8 @@ import { MultipartFile } from "@fastify/multipart";
 import sharp from "sharp";
 import { urlAlphabet, customAlphabet } from "nanoid";
 import { FastifyInstance, FastifyPluginOptions, FastifyReply, FastifyRequest } from "fastify";
-import { FileManagerRouteQuerystringType, MoveType, fileManagerQuerystringSchema, fileManagerSchema } from "./schema.js";
+import { FileManagerIndex, FileManagerIndexType, FileManagerRouteQuerystringType, MoveType, fileManagerQuerystringSchema, fileManagerSchema, HTTPMethod } from "./schema.js";
+import { Move } from "./schema.js";
 
 const nanoidUrlAlphabet = customAlphabet(urlAlphabet);
 
@@ -50,17 +51,100 @@ let filesystem: FileSystemManifest;
 refreshManifest();
 
 async function routes(fastify: FastifyInstance, opts: FileManagerPluginOpts) {
-    fastify.get("/", async (_req, reply) => {
-        await refreshManifest();
-        reply.send({
-            msg: "filemanager"
+    fastify.get<{
+        Reply: FileManagerIndexType
+    }>("/", {
+        schema: {
+            response: {
+                200: FileManagerIndex
+            }
+        }
+    }, async (_req, reply) => {
+        reply.status(200).send({
+            title: "This is the file system",
+            actions: [
+                {
+                    method: HTTPMethod.GET,
+                    endpoint: "/ls",
+                    schema: {
+                        query: {
+                            path: {type: "string"}
+                        },
+                    },
+                    description: "List files/directories in :path"
+                },
+                {
+                    method: HTTPMethod.POST,
+                    endpoint: "/mkdir",
+                    schema: {
+                        query: {
+                            path: {type: "string"}
+                        },
+                    },
+                    description: "Create a new directory"
+                },
+                {
+                    method: HTTPMethod.DELETE,
+                    endpoint: "/rm",
+                    schema: {
+                        query: {
+                            path: {type: "string"}
+                        },
+                    },
+                    description: "Recursively deletes a directory or file"
+                },
+                {
+                    method: HTTPMethod.GET,
+                    endpoint: "/file",
+                    schema: {
+                        query: {
+                            path: {type: "string"}
+                        },
+                    },
+                    description: "Show information about a file"
+                },
+                {
+                    method: HTTPMethod.POST,
+                    endpoint: "/mv",
+                    schema: {
+                        body: {
+                            source: {type: "string"},
+                            destination: {type: "string"}
+                        }
+                    },
+                    description: "Move a file or folder. The parent of 'body.destination' _must_ exist."
+                },
+                {
+                    method: HTTPMethod.POST,
+                    endpoint: "/file",
+                    schema: {
+                        query: {
+                            path: {type: "string"}
+                        },
+                        body: {
+                            file: {type: "multipart"}
+                        }
+                    },
+                    description: "Upload a file to 'query.path'"
+                },
+                {
+                    method: HTTPMethod.GET,
+                    endpoint: "/download",
+                    schema: {
+                        query: {
+                            path: {type: "string"}
+                        }
+                    },
+                    description: "Return the file referenced by 'query.path' as an 'application/octet-stream'. Or, simply, download the file."
+                }
+            ]
         });
     });
 
     fastify.get<FileManagerRoute>("/ls", fileManagerSchema, listFiles);
     fastify.post<FileManagerRoute>("/mkdir", fileManagerSchema, mkdir);
     fastify.delete<FileManagerRoute>("/rm", fileManagerSchema, rm);
-    fastify.post("/mv", mv);
+    fastify.post("/mv", {schema: {body: Move}} ,mv);
     fastify.get<FileManagerRoute>("/file", fileManagerSchema, statFile);
     fastify.post("/file", {
         // onRequest: authenticateRoute("admin"),
@@ -76,7 +160,7 @@ async function routes(fastify: FastifyInstance, opts: FileManagerPluginOpts) {
     }, uploadFile);
 
     // TODO: zip
-    fastify.get<FileManagerRoute>("/file/download", fileManagerSchema, downloadFile);
+    fastify.get<FileManagerRoute>("/download", fileManagerSchema, downloadFile);
 }
 
 async function refreshManifest() {

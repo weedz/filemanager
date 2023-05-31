@@ -19,3 +19,29 @@ export const fileManagerSchema: RouteShorthandOptions = {
         querystring: fileManagerQuerystringSchema
     },
 } as const;
+
+export enum HTTPMethod {
+    GET = "GET",
+    POST = "POST",
+    DELETE = "DELETE",
+}
+
+const FileManagerIndexActions = Type.Object({
+    method: Type.Enum(HTTPMethod),
+    endpoint: Type.String(),
+    schema: Type.Partial(
+        Type.Object({
+            query: Type.Any(),
+            body: Type.Any(),
+            path: Type.Any(),
+        })
+    ),
+    description: Type.String(),
+});
+
+export const FileManagerIndex = Type.Object({
+    title: Type.String(),
+    actions: Type.Array(FileManagerIndexActions),
+});
+
+export type FileManagerIndexType = Static<typeof FileManagerIndex>;
