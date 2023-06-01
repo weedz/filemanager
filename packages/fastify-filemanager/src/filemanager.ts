@@ -434,6 +434,23 @@ async function mkdir(req: FastifyRequest<FileManagerRoute>, reply: FastifyReply)
     return reply.status(201).send();
 }
 
+async function rmNode(file: DirNode | FileNode) {
+    if (file.type === "file") {
+        await fs.rm(path.join(paths.root.absolute, file.filename));
+        if (file.thumbnail) {
+            try {
+                await fs.rm(path.join(paths.thumbnails.absolute, file.thumbnail));
+            } catch (err) {
+                console.log("Failed to remove thumbnail:", err);
+            }
+        }
+    } else {
+        for (const node of Object.values(file.nodes)) {
+            await rmNode(node);
+        }
+    }
+}
+
 async function rm(req: FastifyRequest<FileManagerRoute>, reply: FastifyReply) {
     const dirPath = normalizePath(req.query.path);
     if (!dirPath) {
@@ -445,18 +462,7 @@ async function rm(req: FastifyRequest<FileManagerRoute>, reply: FastifyReply) {
         return reply.status(404).send();
     }
 
-    const node = parentNode.tree.nodes[parentNode.head];
-
-    if (node.type === "file") {
-        await fs.rm(path.join(paths.root.absolute, node.filename));
-        if (node.thumbnail) {
-            try {
-                await fs.rm(path.join(paths.thumbnails.absolute, node.thumbnail));
-            } catch (err) {
-                console.log("Failed to remove thumbnail:", err);
-            }
-        }
-    }
+    await rmNode(parentNode.tree.nodes[parentNode.head]);
 
     delete parentNode.tree.nodes[parentNode.head];
 
