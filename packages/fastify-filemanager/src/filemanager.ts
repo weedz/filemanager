@@ -24,7 +24,13 @@ interface FileNode {
     filename: string
     size: number
     id?: number
-    thumbnail?: string
+}
+interface ImageFileNode extends FileNode {
+    image: {
+        thumbnail: string
+        width: number | undefined; // `undefined` means we could not read the width from source image
+        height: number | undefined; // `undefined` means we could not read the height from source image
+    }
 }
 
 interface DirNode {
@@ -275,12 +281,24 @@ async function uploadFile(req: FastifyRequest<{
     const newFileName = nanoidUrlAlphabet();
 
     const extname = path.extname(file.filename);
+    const newFileNameWithExtension = `${newFileName}${extname}`;
 
     const inputBuffer = await file.toBuffer();
+    await fs.writeFile(path.join(paths.root.absolute, newFileNameWithExtension), inputBuffer);
+
+    const newNode: FileNode = {
+        type: "file",
+        filename: newFileNameWithExtension,
+        size: inputBuffer.length,
+    };
+    targetDirectory.nodes[file.filename] = newNode;
+
     if (file.mimetype.startsWith("image")) {
         // Create a thumbnail
         try {
-            await sharp(inputBuffer)
+            const image = sharp(inputBuffer);
+            const imageMeta = await image.metadata();
+            await image
                 .resize({
                     withoutEnlargement: true,
                     width: 128,
@@ -288,22 +306,15 @@ async function uploadFile(req: FastifyRequest<{
                 })
                 .webp()
                 .toFile(path.join(paths.thumbnails.absolute, `${newFileName}.webp`));
+            (newNode as ImageFileNode).image = {
+                height: imageMeta.height,
+                width: imageMeta.width,
+                thumbnail: `${newFileName}.webp`
+            };
         } catch (err) {
             console.error("Failed to create thumbnail");
         }
     }
-
-    const newFileNameWithExtension = `${newFileName}${extname}`;
-
-    await fs.writeFile(path.join(paths.root.absolute, newFileNameWithExtension), inputBuffer);
-
-    const newNode: FileNode = {
-        type: "file",
-        filename: newFileNameWithExtension,
-        size: inputBuffer.length,
-        thumbnail: `${newFileName}.webp`,
-    };
-    targetDirectory.nodes[file.filename] = newNode;
 
     await saveManifest();
 
@@ -378,11 +389,20 @@ async function listFiles(req: FastifyRequest<FileManagerRoute>, reply: FastifyRe
                 name: nodeName,
             };
         }
+        if ("image" in node) {
+            const imageNode = node as ImageFileNode;
+            return {
+                type: imageNode.type,
+                name: nodeName,
+                thumbnail: imageNode.image.thumbnail,
+                size: imageNode.size
+            }
+        }
 
         return {
             type: node.type,
             name: nodeName,
-            thumbnail: node.thumbnail,
+            // TODO: Thumbnails for common file types? Like ".rar", ".zip", ".txt", ".pdf" etc.
             size: node.size
         }
     }));
@@ -437,11 +457,14 @@ async function mkdir(req: FastifyRequest<FileManagerRoute>, reply: FastifyReply)
 async function rmNode(file: DirNode | FileNode) {
     if (file.type === "file") {
         await fs.rm(path.join(paths.root.absolute, file.filename));
-        if (file.thumbnail) {
-            try {
-                await fs.rm(path.join(paths.thumbnails.absolute, file.thumbnail));
-            } catch (err) {
-                console.log("Failed to remove thumbnail:", err);
+        if ("image" in file) {
+            const imageNode = file as ImageFileNode;
+            if (imageNode.image.thumbnail) {
+                try {
+                    await fs.rm(path.join(paths.thumbnails.absolute, imageNode.image.thumbnail));
+                } catch (err) {
+                    console.log("Failed to remove thumbnail:", err);
+                }
             }
         }
     } else {
@@ -472,26 +495,33 @@ async function rm(req: FastifyRequest<FileManagerRoute>, reply: FastifyReply) {
 }
 
 async function downloadFile(req: FastifyRequest<FileManagerRoute>, reply: FastifyReply) {
-    const nodePath = normalizePath(req.query.path);
-    const node = getNode(nodePath);
-
-    if (!node) {
-        return reply.status(404).send();
+    const requestedPaths = req.query.path.split(",");
+    if (requestedPaths.length > 1) {
+        // TODO: "multi-file" download. Make a ".zip"-archive?
+        return reply.status(422).send({msg: `TODO: "multi-file" download. Make a ".zip"-archive?`});
+    } else {
+        const nodePath = normalizePath(req.query.path);
+        const node = getNode(nodePath);
+    
+        if (!node) {
+            return reply.status(404).send();
+        }
+    
+        if (node.type === "dir") {
+            // "multi-file" download. Make a ".zip"-archive?
+            // TODO: Zip multiple files and folders?
+            return reply.status(422).send({msg: `TODO: "multi-file" download. Make a ".zip"-archive?`});
+        }
+    
+        const filePath = path.join(paths.root.absolute, node.filename);
+    
+        const file = await fs.open(filePath);
+    
+        const stream = file.createReadStream();
+        reply.header("Content-Type", "application/octet-stream");
+        reply.header("Content-Disposition", `attachment; filename=${node.filename}`);
+        return reply.send(stream);
     }
-
-    if (node.type === "dir") {
-        // TODO: Zip multiple files and folders?
-        return reply.status(422).send({error: "unable to download a directory"});
-    }
-
-    const filePath = path.join(paths.root.absolute, node.filename);
-
-    const file = await fs.open(filePath);
-
-    const stream = file.createReadStream();
-    reply.header("Content-Type", "application/octet-stream");
-    reply.header("Content-Disposition", `attachment; filename=${node.filename}`);
-    return reply.send(stream);
 }
 
 export const filemanager = fp(async (fastify, opts: FileManagerPluginOpts) => {
