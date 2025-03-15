@@ -12,18 +12,11 @@
   "author": "",
   "license": "MIT",
   "devDependencies": {
-    "@preact/preset-vite": "^2.5.0",
-    "typescript": "^5.0.4",
-    "vite": "^4.3.9"
+    "@preact/preset-vite": "^2.10.1",
+    "typescript": "^5.8.2",
+    "vite": "^6.2.2"
   },
   "dependencies": {
-    "preact": "^10.15.1"
-  },
-  "pnpm": {
-    "peerDependencyRules": {
-      "ignoreMissing": [
-        "@babel/core"
-      ]
-    }
+    "preact": "^10.26.4"
   }
 }
