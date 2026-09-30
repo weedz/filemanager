@@ -2,11 +2,9 @@
     "extends": "../../tsconfig.common.json",
     "compilerOptions": {
         "noEmit": false,
-        "outDir": "dist",
+        "rootDir": "./src",
+        "outDir": "./dist",
         "module": "NodeNext",
         "moduleResolution": "nodenext"
-    },
-    "include": [
-        "./src"
-    ]
+    }
 }

@@ -1,11 +1,24 @@
 import path from "node:path";
 import fs from "node:fs/promises";
 import fp from "fastify-plugin";
-import { MultipartFile } from "@fastify/multipart";
+import { type MultipartFile } from "@fastify/multipart";
 import sharp from "sharp";
 import { urlAlphabet, customAlphabet } from "nanoid";
-import { FastifyInstance, FastifyPluginOptions, FastifyReply, FastifyRequest } from "fastify";
-import { FileManagerIndex, FileManagerIndexType, FileManagerRouteQuerystringType, MoveType, fileManagerQuerystringSchema, fileManagerSchema, HTTPMethod } from "./schema.js";
+import type {
+  FastifyInstance,
+  FastifyPluginOptions,
+  FastifyReply,
+  FastifyRequest,
+} from "fastify";
+import {
+  FileManagerIndex,
+  type FileManagerIndexType,
+  type FileManagerRouteQuerystringType,
+  type MoveType,
+  fileManagerQuerystringSchema,
+  fileManagerSchema,
+  HTTPMethod,
+} from "./schema.js";
 import { Move } from "./schema.js";
 
 const nanoidUrlAlphabet = customAlphabet(urlAlphabet);

@@ -1,7 +1,7 @@
 {
     "compilerOptions": {
         "declaration": true,
-        "module": "ESNext",
+        "module": "nodenext",
         "target": "ESNext",
         "strict": true,
         "strictFunctionTypes": true,
@@ -19,6 +19,9 @@
         "sourceMap": false,
         "moduleResolution": "node",
         "resolveJsonModule": true,
-        "useDefineForClassFields": true
+        "useDefineForClassFields": true,
+        "skipLibCheck": true,
+        "verbatimModuleSyntax": true,
+       "isolatedModules": true
     }
 }

@@ -1,5 +1,5 @@
-import { Static, Type } from "typebox";
-import { RouteShorthandOptions } from "fastify";
+import { type Static, Type } from "typebox";
+import { type RouteShorthandOptions } from "fastify";
 
 export const Move = Type.Object({
   source: Type.String(),

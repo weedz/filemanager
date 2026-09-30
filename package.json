@@ -9,12 +9,5 @@
   "keywords": [],
   "author": "",
   "license": "ISC",
-  "pnpm": {
-    "peerDependencyRules": {
-      "ignoreMissing": [
-        "@babel/core"
-      ]
-    }
-  },
-  "packageManager": "pnpm@10.32.1+sha512.a706938f0e89ac1456b6563eab4edf1d1faf3368d1191fc5c59790e96dc918e4456ab2e67d613de1043d2e8c81f87303e6b40d4ffeca9df15ef1ad567348f2be"
+  "packageManager": "pnpm@12.8.2+sha512.a5941679663d952c5f0ecc38ba98af98b4dc01b95780354f6894f2f873973cef2f7e2989d7db3ee5393938ae21f62fe06bcdf685d475ddad829a62095d2b8b11"
 }
